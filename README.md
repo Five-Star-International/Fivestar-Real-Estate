@@ -24,3 +24,5 @@ Reference preview: https://d1qq7f8dtbo6ib.cloudfront.net/previews/fivestar-realt
 ## Ownership
 
 Initially created under shanegavin91. It can be transferred to Five-Star-International through GitHub repository Settings > General > Danger Zone > Transfer ownership, subject to organisation permissions. Update local remotes after transfer.
+
+The inherited `favicon.ico` reference should use the production site's favicon during integration; that file is not included in this handover.
