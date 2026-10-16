@@ -199,13 +199,16 @@
   }
 
   function readResponse (text) {
+    var parsed;
     if (!text) {
-      return {};
+      return { _unverifiedResponse: true };
     }
     try {
-      return window.JSON.parse(text);
+      parsed = window.JSON.parse(text);
+      return parsed && typeof parsed === 'object' &&
+        Object.prototype.toString.call(parsed) !== '[object Array]' ? parsed : { _unverifiedResponse: true };
     } catch (error) {
-      return { message: text };
+      return { message: text, _unverifiedResponse: true };
     }
   }
 
@@ -330,6 +333,17 @@
 
   function completeSuccess (payload) {
     var message = payload && payload.message;
+
+    // Called only after the enquiry endpoint returns HTTP 2xx. Analytics must
+    // never interrupt the owner's confirmation or the form's normal behaviour.
+    try {
+      if (typeof window.fiveStarTrackOwnerEnquiry === 'function') {
+        window.fiveStarTrackOwnerEnquiry(getField('service').value, payload);
+      }
+    } catch (error) {
+      // Tracking can be blocked or unavailable; the enquiry remains submitted.
+    }
+
     setHidden(form, true);
     setHidden(choices, true);
     setHidden(success, false);
@@ -349,6 +363,7 @@
     var method = (form.getAttribute('method') || 'POST').toUpperCase();
     var action = form.getAttribute('action');
     var body;
+    var responseHandled = false;
 
     xhr.open(method, action, true);
     xhr.setRequestHeader('Accept', 'application/json');
@@ -358,9 +373,10 @@
 
     xhr.onreadystatechange = function () {
       var payload;
-      if (xhr.readyState !== 4) {
+      if (xhr.readyState !== 4 || responseHandled) {
         return;
       }
+      responseHandled = true;
       payload = readResponse(xhr.responseText);
 
       if (xhr.status >= 200 && xhr.status < 300) {
